@@ -9,6 +9,39 @@
             font-family: Arial, sans-serif;
             background: #f5f5f5;
         }
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .search-box {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            width: 200px;
+        }
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .filter-button {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+        .filter-button.active {
+            background: #2c5282;
+            color: white;
+        }
         #container {
             width: 100%;
             height: 100vh;
@@ -67,6 +100,17 @@
 </head>
 <body>
     <div id="container">
+        <div class="controls">
+            <input type="text" class="search-box" placeholder="Search applications..." id="search">
+            <div class="filter-buttons">
+                <button class="filter-button active" data-program="all">All</button>
+                <button class="filter-button" data-program="fire">Fire</button>
+                <button class="filter-button" data-program="recreation">Recreation</button>
+                <button class="filter-button" data-program="timber">Timber</button>
+                <button class="filter-button" data-program="wildlife">Wildlife</button>
+                <button class="filter-button" data-program="lands">Lands</button>
+            </div>
+        </div>
         <div id="graph"></div>
     </div>
 
@@ -265,6 +309,49 @@
         legendItems.append("span")
             .text(d => d.label);
 
+        // Search functionality
+        const searchBox = document.getElementById('search');
+        searchBox.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            node.style('opacity', d => {
+                const matches = d.name.toLowerCase().includes(searchTerm) ||
+                              d.description.toLowerCase().includes(searchTerm);
+                return matches ? 1 : 0.1;
+            });
+            link.style('opacity', d => {
+                const sourceVisible = d.source.name.toLowerCase().includes(searchTerm);
+                const targetVisible = d.target.name.toLowerCase().includes(searchTerm);
+                return (sourceVisible || targetVisible) ? 1 : 0.1;
+            });
+        });
+
+        // Filter functionality
+        const filterButtons = document.querySelectorAll('.filter-button');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                // Update button states
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const program = button.dataset.program;
+
+                if (program === 'all') {
+                    node.style('opacity', 1);
+                    link.style('opacity', 1);
+                } else {
+                    node.style('opacity', d => {
+                        if (d.type === 'program') return d.id === program ? 1 : 0.1;
+                        return d.program === program ? 1 : 0.1;
+                    });
+                    link.style('opacity', d => {
+                        const sourceProgram = d.source.type === 'program' ? d.source.id : d.source.program;
+                        const targetProgram = d.target.type === 'program' ? d.target.id : d.target.program;
+                        return (sourceProgram === program || targetProgram === program) ? 1 : 0.1;
+                    });
+                }
+            });
+        });
+
         // Simulation tick function
         simulation.on("tick", () => {
             link
@@ -311,3 +398,4 @@
     </script>
 </body>
 </html>
+<!-- End of file index.html -->
